@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+openai
+transformers
+python-docx
+pdfkit
+streamlit
+python-pptx
+requests
+pydantic
