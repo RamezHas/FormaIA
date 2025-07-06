@@ -3,14 +3,26 @@ import requests
 import io
 from docx import Document
 from fpdf import FPDF
+import unicodedata
 
-st.title("FormaIA - Générateur de Contenu de Formation IA")
+def remove_accents(text):
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', text)
+        if unicodedata.category(c) != 'Mn'
+    )
+
+# Display logo at the top
+st.image("../logo.png", width=120)
+
+st.title("Générateur de Contenu de Formation IA")
 
 # User input
 with st.form("course_form"):
-    topic = st.text_input("Sujet du cours", "Les bases du réseau informatique")
+    topic = st.text_input("Sujet du cours", "")
     level = st.selectbox("Niveau", ["débutant", "intermédiaire", "avancé"])
     submitted = st.form_submit_button("Générer le cours")
+    submitted_qcm = st.form_submit_button("Générer QCM")
+    
 
 if submitted:
     with st.spinner("Génération en cours..."):
@@ -25,8 +37,21 @@ if submitted:
             st.success("Cours généré !")
         except Exception as e:
             st.error(f"Erreur lors de la génération : {e}")
+if submitted_qcm:
+    with st.spinner("Génération du QCM en cours..."):
+        try:
+            response = requests.post(
+                "http://127.0.0.1:8000/generate-qcm",
+                json={"topic": topic, "level": level}
+            )
+            response.raise_for_status()
+            qcm_data = response.json()["qcm"]
+            st.session_state["qcm_data"] = qcm_data
+            st.success("QCM généré !")
+        except Exception as e:
+            st.error(f"Erreur lors de la génération du QCM : {e}")
 
-# Display and export if course data exists
+
 if "course_data" in st.session_state:
     data = st.session_state["course_data"]
     st.subheader(data["title"])
@@ -58,20 +83,25 @@ if "course_data" in st.session_state:
         if st.button("Exporter en PDF"):
             pdf = FPDF()
             pdf.add_page()
-            pdf.add_font("DejaVu", "", "DejaVuSans.ttf", uni=True)
-            pdf.set_font("DejaVu", size=16)
-            pdf.cell(0, 10, data["title"], ln=True, align="C")
-            pdf.set_font("DejaVu", size=12)
+            pdf.set_font("Arial", size=16)
+            pdf.cell(0, 10, remove_accents(data["title"]), ln=True, align="C")
+            pdf.set_font("Arial", size=12)
             pdf.cell(0, 10, "Plan:", ln=True)
-            pdf.multi_cell(0, 10, data["outline"])
+            pdf.multi_cell(0, 10, remove_accents(data["outline"]))
             pdf.cell(0, 10, "Résumé:", ln=True)
-            pdf.multi_cell(0, 10, data["summary"])
+            pdf.multi_cell(0, 10, remove_accents(data["summary"]))
             pdf.cell(0, 10, "Contenu brut:", ln=True)
-            pdf.multi_cell(0, 10, data["raw_content"])
-            pdf_output = pdf.output(dest='S').encode('utf-8')
+            pdf.multi_cell(0, 10, remove_accents(data["raw_content"]))
+            pdf_output = pdf.output(dest='S').encode('latin1')
             st.download_button(
                 label="Télécharger le PDF",
                 data=pdf_output,
                 file_name="cours_formaia.pdf",
                 mime="application/pdf"
             )
+if "qcm_data" in st.session_state:
+    st.subheader("QCM")
+    qcm_data = st.session_state["qcm_data"]
+
+
+

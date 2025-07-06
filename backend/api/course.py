@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from backend.models.course_models import CourseRequest, CourseResponse
-from backend.services.generator import generate_course_content
+from backend.services.generator import generate_course_content, generate_qcm_content
 
 router = APIRouter()
 
@@ -19,3 +19,7 @@ async def generate_course(request: CourseRequest):
         return CourseResponse(title=title, outline=outline, summary=summary, raw_content=raw_content)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/generate-qcm")
+async def generate_qcm(request: CourseRequest):
+    return await generate_qcm_content(request.topic, request.level)
