@@ -1,9 +1,9 @@
 import os
 import httpx
 
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = "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"
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-MODEL = "deepseek/deepseek-chat-v3-0324"  # Gemini 2.5 Pro Experimental
+MODEL = "openai/gpt-4o-mini"  
 
 async def generate_course_content(topic: str, level: str = "débutant") -> dict:
     prompt = f"""
@@ -35,34 +35,55 @@ async def generate_course_content(topic: str, level: str = "débutant") -> dict:
         print(f"Error calling OpenRouter API: {e}")
         raise
 
+import json
+
 async def generate_qcm_content(topic: str, level: str = "débutant") -> dict:
     prompt = f"""
-    Génère 5 questions QCM sur le thème suivant : '{topic}'.
-    Niveau : {level}.
-    Pour chaque question, propose 4 choix de réponses (A, B, C, D) et indique la bonne réponse.
-    Réponds en français et structure la réponse en JSON :
-    [
-      {{
-        "question": "...",
-        "choices": ["A ...", "B ...", "C ...", "D ..."],
-        "answer": "A"
-      }},
-      ...
-    ]
-    """
+Tu es un générateur de QCM. Génère exactement 5 questions à choix multiples sur le thème : "{topic}".
+Niveau : {level}.
+Structure la réponse exclusivement comme une liste JSON **valide**, sans aucun texte supplémentaire, sans introduction, sans code block.
+
+Format attendu :
+[
+  {{
+    "question": "Quel est ... ?",
+    "choices": ["A. ...", "B. ...", "C. ...", "D. ..."],
+    "answer": "A"
+  }},
+  ...
+]
+"""
+
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json"
     }
+
     payload = {
         "model": MODEL,
         "messages": [
             {"role": "user", "content": prompt}
         ]
     }
+
     async with httpx.AsyncClient() as client:
         response = await client.post(OPENROUTER_API_URL, headers=headers, json=payload)
         response.raise_for_status()
         result = response.json()
         content = result["choices"][0]["message"]["content"]
-        return {"qcm": content}
+
+        # Remove code blocks if present (e.g., ```json ... ```)
+        if content.startswith("```"):
+            content = content.strip().strip("`").split("json")[-1].strip()
+
+        # Try parsing the JSON content
+        try:
+            parsed_qcm = json.loads(content)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Erreur de parsing JSON: {e}\nContenu reçu:\n{content}")
+
+        # Optional: return as string if you want to parse later in Streamlit
+        # return {"qcm": json.dumps(parsed_qcm)}
+
+        # Return directly as parsed object (recommended)
+        return {"qcm": parsed_qcm}

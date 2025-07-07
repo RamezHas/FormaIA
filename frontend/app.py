@@ -4,6 +4,7 @@ import io
 from docx import Document
 from fpdf import FPDF
 import unicodedata
+import json
 
 def remove_accents(text):
     return ''.join(
@@ -46,7 +47,7 @@ if submitted_qcm:
             )
             response.raise_for_status()
             qcm_data = response.json()["qcm"]
-            st.session_state["qcm_data"] = qcm_data
+            st.session_state["qcm_data"] = qcm_data  # Already a Python list/dict
             st.success("QCM généré !")
         except Exception as e:
             st.error(f"Erreur lors de la génération du QCM : {e}")
@@ -100,8 +101,16 @@ if "course_data" in st.session_state:
                 mime="application/pdf"
             )
 if "qcm_data" in st.session_state:
+    data = st.session_state["qcm_data"]
+    st.write(data)
     st.subheader("QCM")
-    qcm_data = st.session_state["qcm_data"]
+    st.markdown("### Questions :")
+    for i, question in enumerate(data):
+        st.write(f"**Question {i + 1}:** {question['question']}")
+        for choice in question['choices']:
+            st.write(f"- {choice}")
+        st.write(f"**Réponse correcte :** {question['answer']}")
+    
 
-
-
+   
+    
