@@ -102,15 +102,40 @@ if "course_data" in st.session_state:
             )
 if "qcm_data" in st.session_state:
     data = st.session_state["qcm_data"]
-    st.write(data)
     st.subheader("QCM")
     st.markdown("### Questions :")
+
     for i, question in enumerate(data):
         st.write(f"**Question {i + 1}:** {question['question']}")
-        for choice in question['choices']:
-            st.write(f"- {choice}")
-        st.write(f"**Réponse correcte :** {question['answer']}")
-    
+        st.radio(
+            "Choix :",
+            options=question['choices'],
+            key=f"qcm_{i}",
+            index=None
+        )
 
-   
+    qcm_button = st.button("Soumettre le QCM")
+
+    if qcm_button:
+        score = 0
+        st.markdown("---")
+        st.markdown("### Résultats :")
+
+        for i, question in enumerate(data):
+            user_answer = st.session_state.get(f"qcm_{i}", None)
+            correct_letter = question["answer"]
+            correct_text = next(
+                (choice for choice in question["choices"] if choice.startswith(correct_letter)), None
+            )
+
+            if user_answer == correct_text:
+                st.success(f"✅ Question {i + 1}: Correct")
+                score += 1
+            else:
+                st.error(f"❌ Question {i + 1}: Incorrect (Bonne réponse : {correct_text})")
+
+        st.markdown("---")
+        st.markdown(f"### Score final : **{score} / {len(data)}**")
+
+
     

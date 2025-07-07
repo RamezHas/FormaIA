@@ -1,7 +1,7 @@
 import os
 import httpx
 
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = "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"
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODEL = "openai/gpt-4o-mini"  
 
