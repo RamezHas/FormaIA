@@ -3,9 +3,9 @@ import httpx
 
 OPENROUTER_API_KEY = "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"
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-MODEL = "openai/gpt-4o-mini"  
+MODEL = "meta-llama/llama-4-maverick:free"  
 
-async def generate_course_content(topic: str, level: str = "débutant") -> dict:
+async def generate_course_content(topic: str, level: str = "débutant", model: str = None) -> dict:
     prompt = f"""
     Génère un cours structuré sur le thème suivant : '{topic}'.
     Niveau : {level}.
@@ -21,7 +21,7 @@ async def generate_course_content(topic: str, level: str = "débutant") -> dict:
         "Content-Type": "application/json"
     }
     data = {
-        "model": MODEL,
+        "model": model if model else MODEL,
         "messages": [
             {"role": "user", "content": prompt}
         ]
@@ -37,7 +37,7 @@ async def generate_course_content(topic: str, level: str = "débutant") -> dict:
 
 import json
 
-async def generate_qcm_content(topic: str, level: str = "débutant") -> dict:
+async def generate_qcm_content(topic: str, level: str = "débutant", model: str = None) -> dict:
     prompt = f"""
 Tu es un générateur de QCM. Génère exactement 5 questions à choix multiples sur le thème : "{topic}".
 Niveau : {level}.
@@ -60,7 +60,7 @@ Format attendu :
     }
 
     payload = {
-        "model": MODEL,
+        "model": model if model else MODEL,
         "messages": [
             {"role": "user", "content": prompt}
         ]

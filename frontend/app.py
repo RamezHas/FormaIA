@@ -21,8 +21,21 @@ st.title("Générateur de Contenu de Formation IA")
 with st.form("course_form"):
     topic = st.text_input("Sujet du cours", "")
     level = st.selectbox("Niveau", ["débutant", "intermédiaire", "avancé"])
-    submitted = st.form_submit_button("Générer le cours")
-    submitted_qcm = st.form_submit_button("Générer QCM")
+    model_options = [
+        ("Llama 4 Maverick", "meta-llama/llama-4-maverick"),
+        ("GPT-4o-mini", "openai/gpt-4o-mini"),
+        ("Gemini 2.0 Flash", "google/gemini-2.0-flash-001"),
+        ("QwQ 32B", "qwen/qwq-32b:free"),
+        ("Deepseek R1 0528 Qwen3 8B", "deepseek/deepseek-r1-0528-qwen3-8b:free")
+    ]
+    model_display_names = [name for name, _ in model_options]
+    model_selected = st.selectbox("Modèle IA", model_display_names)
+    model_id = dict(model_options)[model_selected]
+    col1, spacer, col2 = st.columns([1, 0.05, 1])
+    with col1:
+        submitted = st.form_submit_button("Générer le cours", use_container_width=True)
+    with col2:
+        submitted_qcm = st.form_submit_button("Générer QCM", use_container_width=True)
     
 
 if submitted:
@@ -30,27 +43,37 @@ if submitted:
         try:
             response = requests.post(
                 "http://127.0.0.1:8000/generate-course",
-                json={"topic": topic, "level": level}
+                json={"topic": topic, "level": level, "model": model_id},
+                timeout=30
             )
             response.raise_for_status()
             data = response.json()
             st.session_state["course_data"] = data
             st.success("Cours généré !")
-        except Exception as e:
+        except requests.Timeout:
+            st.error("La requête a expiré. Veuillez réessayer plus tard.")
+        except requests.RequestException as e:
             st.error(f"Erreur lors de la génération : {e}")
+        except Exception as e:
+            st.error(f"Erreur inattendue : {e}")
 if submitted_qcm:
     with st.spinner("Génération du QCM en cours..."):
         try:
             response = requests.post(
                 "http://127.0.0.1:8000/generate-qcm",
-                json={"topic": topic, "level": level}
+                json={"topic": topic, "level": level, "model": model_id},
+                timeout=30
             )
             response.raise_for_status()
             qcm_data = response.json()["qcm"]
             st.session_state["qcm_data"] = qcm_data  # Already a Python list/dict
             st.success("QCM généré !")
-        except Exception as e:
+        except requests.Timeout:
+            st.error("La requête a expiré. Veuillez réessayer plus tard.")
+        except requests.RequestException as e:
             st.error(f"Erreur lors de la génération du QCM : {e}")
+        except Exception as e:
+            st.error(f"Erreur inattendue : {e}")
 
 
 if "course_data" in st.session_state:

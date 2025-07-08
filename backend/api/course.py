@@ -7,7 +7,7 @@ router = APIRouter()
 @router.post("/generate-course", response_model=CourseResponse)
 async def generate_course(request: CourseRequest):
     try:
-        ai_response = await generate_course_content(request.topic, request.level)
+        ai_response = await generate_course_content(request.topic, request.level, request.model)
         # Parse AI response (assume response['choices'][0]['message']['content'] contains the text)
         content = ai_response['choices'][0]['message']['content']
         # Simple parsing (to be improved):
@@ -22,4 +22,4 @@ async def generate_course(request: CourseRequest):
 
 @router.post("/generate-qcm")
 async def generate_qcm(request: CourseRequest):
-    return await generate_qcm_content(request.topic, request.level)
+    return await generate_qcm_content(request.topic, request.level, request.model)
