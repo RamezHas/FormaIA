@@ -1,9 +1,12 @@
 import os
 import httpx
+from pptx import Presentation
+from pptx.util import Inches, Pt
+from io import BytesIO
 
 OPENROUTER_API_KEY = "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"
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-MODEL = "meta-llama/llama-4-maverick:free"  
+MODEL = "openai/gpt-4o-mini"  
 
 async def generate_course_content(topic: str, level: str = "débutant", model: str = None) -> dict:
     prompt = f"""
@@ -87,3 +90,28 @@ Format attendu :
 
         # Return directly as parsed object (recommended)
         return {"qcm": parsed_qcm}
+
+def generate_course_pptx(title: str, outline: str, summary: str, raw_content: str) -> bytes:
+    prs = Presentation()
+    # Title slide
+    slide_layout = prs.slide_layouts[0]
+    slide = prs.slides.add_slide(slide_layout)
+    slide.shapes.title.text = title or "Titre du cours"
+    if slide.placeholders and len(slide.placeholders) > 1:
+        slide.placeholders[1].text = summary or "Résumé"
+    # Outline slide
+    outline_slide = prs.slides.add_slide(prs.slide_layouts[1])
+    outline_slide.shapes.title.text = "Plan détaillé"
+    outline_slide.placeholders[1].text = outline or ""
+    # Summary slide
+    summary_slide = prs.slides.add_slide(prs.slide_layouts[1])
+    summary_slide.shapes.title.text = "Résumé"
+    summary_slide.placeholders[1].text = summary or ""
+    # Main content slide(s)
+    content_slide = prs.slides.add_slide(prs.slide_layouts[1])
+    content_slide.shapes.title.text = "Contenu principal"
+    content_slide.placeholders[1].text = raw_content or ""
+    # Save to bytes
+    pptx_io = BytesIO()
+    prs.save(pptx_io)
+    return pptx_io.getvalue()

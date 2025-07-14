@@ -103,6 +103,32 @@ if "course_data" in st.session_state:
                 file_name="cours_formaia.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
+        if st.button("Exporter en PowerPoint (.pptx)"):
+            with st.spinner("Génération du PowerPoint en cours..."):
+                try:
+                    response = requests.post(
+                        "http://127.0.0.1:8000/generate-course-pptx",
+                        json={
+                            "topic": topic,
+                            "level": level,
+                            "model": model_id
+                        },
+                        timeout=60
+                    )
+                    response.raise_for_status()
+                    pptx_bytes = response.content
+                    st.download_button(
+                        label="Télécharger le PowerPoint",
+                        data=pptx_bytes,
+                        file_name="cours_formaia.pptx",
+                        mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                    )
+                except requests.Timeout:
+                    st.error("La requête a expiré. Veuillez réessayer plus tard.")
+                except requests.RequestException as e:
+                    st.error(f"Erreur lors de la génération du PowerPoint : {e}")
+                except Exception as e:
+                    st.error(f"Erreur inattendue : {e}")
     with export_col2:
         if st.button("Exporter en PDF"):
             pdf = FPDF()
