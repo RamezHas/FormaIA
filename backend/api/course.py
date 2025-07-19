@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from io import BytesIO
 from backend.models.course_models import CourseRequest, CourseResponse
-from backend.services.generator import generate_course_content, generate_qcm_content, generate_course_pptx
+from backend.services.generator import generate_course_content, generate_qcm_content, generate_course_pptx, generate_presentation_slides, generate_presentation_pptx
 
 router = APIRouter()
 
@@ -40,5 +40,20 @@ async def generate_course_pptx_endpoint(request: CourseRequest):
         pptx_io = BytesIO(pptx_bytes)
         pptx_io.seek(0)
         return StreamingResponse(pptx_io, media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation", headers={"Content-Disposition": f"attachment; filename=course_{request.topic}.pptx"})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/generate-presentation-pptx")
+async def generate_presentation_pptx_endpoint(request: CourseRequest):
+    try:
+        slides = await generate_presentation_slides(request.topic, request.level, request.model)
+        pptx_bytes = generate_presentation_pptx(slides)
+        pptx_io = BytesIO(pptx_bytes)
+        pptx_io.seek(0)
+        return StreamingResponse(
+            pptx_io,
+            media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            headers={"Content-Disposition": f"attachment; filename=presentation_{request.topic}.pptx"}
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

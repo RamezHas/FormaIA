@@ -31,11 +31,13 @@ with st.form("course_form"):
     model_display_names = [name for name, _ in model_options]
     model_selected = st.selectbox("Modèle IA", model_display_names)
     model_id = dict(model_options)[model_selected]
-    col1, spacer, col2 = st.columns([1, 0.05, 1])
+    col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
         submitted = st.form_submit_button("Générer le cours", use_container_width=True)
     with col2:
         submitted_qcm = st.form_submit_button("Générer QCM", use_container_width=True)
+    with col3:
+        submitted_pptx = st.form_submit_button("Générer Présentation PPTX", use_container_width=True)
     
 
 if submitted:
@@ -72,6 +74,29 @@ if submitted_qcm:
             st.error("La requête a expiré. Veuillez réessayer plus tard.")
         except requests.RequestException as e:
             st.error(f"Erreur lors de la génération du QCM : {e}")
+        except Exception as e:
+            st.error(f"Erreur inattendue : {e}")
+# New AI Presentation PPTX button
+if submitted_pptx:
+    with st.spinner("Génération de la présentation professionnelle en cours..."):
+        try:
+            response = requests.post(
+                "http://127.0.0.1:8000/generate-presentation-pptx",
+                json={"topic": topic, "level": level, "model": model_id},
+                timeout=90
+            )
+            response.raise_for_status()
+            pptx_bytes = response.content
+            st.download_button(
+                label="Télécharger la Présentation PPTX",
+                data=pptx_bytes,
+                file_name="presentation_formaia.pptx",
+                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            )
+        except requests.Timeout:
+            st.error("La requête a expiré. Veuillez réessayer plus tard.")
+        except requests.RequestException as e:
+            st.error(f"Erreur lors de la génération de la présentation : {e}")
         except Exception as e:
             st.error(f"Erreur inattendue : {e}")
 
