@@ -76,29 +76,70 @@ if submitted_qcm:
             st.error(f"Erreur lors de la génération du QCM : {e}")
         except Exception as e:
             st.error(f"Erreur inattendue : {e}")
-# New AI Presentation PPTX button
+# New AI Presentation PPTX button (Step 1: Get outline and show design options)
+if 'pptx_outline' not in st.session_state:
+    st.session_state['pptx_outline'] = None
+if 'pptx_design' not in st.session_state:
+    st.session_state['pptx_design'] = None
+if 'pptx_bytes' not in st.session_state:
+    st.session_state['pptx_bytes'] = None
+
 if submitted_pptx:
-    with st.spinner("Génération de la présentation professionnelle en cours..."):
+    with st.spinner("Génération de l'outline de la présentation en cours..."):
         try:
             response = requests.post(
-                "http://127.0.0.1:8000/generate-presentation-pptx",
+                "http://127.0.0.1:8000/generate-outline",
                 json={"topic": topic, "level": level, "model": model_id},
-                timeout=90
+                timeout=30
             )
             response.raise_for_status()
-            pptx_bytes = response.content
-            st.download_button(
-                label="Télécharger la Présentation PPTX",
-                data=pptx_bytes,
-                file_name="presentation_formaia.pptx",
-                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
-            )
+            outline_data = response.json()
+            st.session_state['pptx_outline'] = outline_data['outline']
+            st.success("Outline généré ! Veuillez choisir un design.")
         except requests.Timeout:
             st.error("La requête a expiré. Veuillez réessayer plus tard.")
         except requests.RequestException as e:
-            st.error(f"Erreur lors de la génération de la présentation : {e}")
+            st.error(f"Erreur lors de la génération de l'outline : {e}")
         except Exception as e:
             st.error(f"Erreur inattendue : {e}")
+
+# Step 2: Show outline and design options, then generate PPTX
+if st.session_state['pptx_outline']:
+    st.subheader("Plan de la Présentation :")
+    st.markdown(st.session_state['pptx_outline'])
+    design_options = ["Minimal", "Corporate", "Colorful"]
+    st.session_state['pptx_design'] = st.radio("Choisissez un design :", design_options, key="pptx_design_radio")
+    if st.button("Confirmer et Générer PPTX"):
+        with st.spinner("Génération de la présentation professionnelle en cours..."):
+            try:
+                response = requests.post(
+                    "http://127.0.0.1:8000/generate-presentation-pptx",
+                    json={
+                        "topic": topic,
+                        "level": level,
+                        "model": model_id,
+                        "outline": st.session_state['pptx_outline'],
+                        "design": st.session_state['pptx_design']
+                    },
+                    timeout=90
+                )
+                response.raise_for_status()
+                pptx_bytes = response.content
+                st.session_state['pptx_bytes'] = pptx_bytes
+                st.success("Présentation générée !")
+            except requests.Timeout:
+                st.error("La requête a expiré. Veuillez réessayer plus tard.")
+            except requests.RequestException as e:
+                st.error(f"Erreur lors de la génération de la présentation : {e}")
+            except Exception as e:
+                st.error(f"Erreur inattendue : {e}")
+    if st.session_state['pptx_bytes']:
+        st.download_button(
+            label="Télécharger la Présentation PPTX",
+            data=st.session_state['pptx_bytes'],
+            file_name="presentation_formaia.pptx",
+            mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        )
 
 
 if "course_data" in st.session_state:

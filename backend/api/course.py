@@ -57,3 +57,25 @@ async def generate_presentation_pptx_endpoint(request: CourseRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/generate-outline")
+async def generate_outline(request: CourseRequest):
+    # Prompt the LLM for a detailed outline only
+    prompt = f"""
+    Génère uniquement un plan détaillé de cours sur le thème suivant : '{request.topic}'.
+    Niveau : {request.level}.
+    Structure :
+    - 6 à 8 grandes sections numérotées
+    - Chaque section avec 2 à 4 points clés en bullet points
+    - Style markdown, pas d'introduction, pas de texte supplémentaire, pas de bloc de code.
+    Réponds en français.
+    """
+    try:
+        ai_response = await generate_course_content(request.topic, request.level, request.model)
+        # Parse the outline from the LLM response
+        content = ai_response['choices'][0]['message']['content']
+        # Try to extract the outline section (if the model returns more than just the outline)
+        # If the content is only the outline, just return it
+        return {"outline": content.strip()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

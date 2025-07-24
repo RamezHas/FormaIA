@@ -6,7 +6,7 @@ from io import BytesIO
 from pptx.dml.color import RGBColor
 import json
 
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = "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"
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODEL = "openai/gpt-4o-mini"  
 
@@ -124,7 +124,7 @@ Chaque élément représente un slide. Utilise des titres clairs et des points s
             result = response.json()
             content = result["choices"][0]["message"]["content"]
             # Remove code block markers if present
-            if content.startswith("```)":
+            if content.startswith("```)"):
                 content = content.strip().strip("`").split("json")[-1].strip()
             slides = json.loads(content)
             return slides
