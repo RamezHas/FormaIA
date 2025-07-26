@@ -5,6 +5,7 @@ class CourseRequest(BaseModel):
     topic: str
     level: Optional[str] = "débutant"  # débutant, intermédiaire, avancé
     model: Optional[str] = None  # Add model selection
+    design: Optional[str] = "Minimal"  # Add design template selection
 
 class CourseResponse(BaseModel):
     title: str

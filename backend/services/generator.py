@@ -5,6 +5,7 @@ from pptx.util import Inches, Pt
 from io import BytesIO
 from pptx.dml.color import RGBColor
 import json
+from pathlib import Path
 
 OPENROUTER_API_KEY = "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"
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
@@ -131,6 +132,65 @@ Chaque élément représente un slide. Utilise des titres clairs et des points s
     except Exception as e:
         print(f"Error calling OpenRouter API: {e}")
         raise
+
+def get_template_path(design_name: str) -> str:
+    """Get the path to the PowerPoint template file for the given design"""
+    # Create templates directory if it doesn't exist
+    templates_dir = Path(__file__).parent.parent / "templates"
+    templates_dir.mkdir(exist_ok=True)
+    
+    template_files = {
+        "Minimal": "minimal_template.pptx",  # Changed from .potx to .pptx
+        "Corporate": "corporate_template.pptx", 
+        "Colorful": "colorful_template.pptx"
+    }
+    
+    template_file = template_files.get(design_name, "minimal_template.pptx")
+    template_path = templates_dir / template_file
+    
+    # If template doesn't exist, return None to use default
+    if not template_path.exists():
+        return None
+    
+    return str(template_path)
+
+def generate_presentation_pptx_with_template(slides, design: str = "Minimal") -> bytes:
+    """Generate PPTX using a ready-made template file"""
+    template_path = get_template_path(design)
+    
+    print(f"Looking for template: {template_path}")
+    print(f"Template exists: {os.path.exists(template_path) if template_path else False}")
+    
+    if template_path and os.path.exists(template_path):
+        # Use the template file
+        print(f"Using template file: {template_path}")
+        prs = Presentation(template_path)
+    else:
+        # Fallback to default template
+        print("Using default template (no template file found)")
+        prs = Presentation()
+    
+    # Add slides using the template's layout
+    for idx, slide_data in enumerate(slides):
+        # Use the first layout (usually title and content)
+        slide_layout = prs.slide_layouts[1] if len(prs.slide_layouts) > 1 else prs.slide_layouts[0]
+        slide = prs.slides.add_slide(slide_layout)
+        
+        # Set title
+        if slide.shapes.title:
+            slide.shapes.title.text = slide_data.get('title', f"Slide {idx+1}")
+        
+        # Set content
+        if len(slide.placeholders) > 1:
+            tf = slide.placeholders[1].text_frame
+            tf.clear()
+            for bullet in slide_data.get('bullets', []):
+                p = tf.add_paragraph()
+                p.text = bullet
+    
+    pptx_io = BytesIO()
+    prs.save(pptx_io)
+    return pptx_io.getvalue()
 
 def generate_presentation_pptx(slides) -> bytes:
     prs = Presentation()

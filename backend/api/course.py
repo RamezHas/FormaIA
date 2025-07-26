@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from io import BytesIO
 from backend.models.course_models import CourseRequest, CourseResponse
-from backend.services.generator import generate_course_content, generate_qcm_content, generate_course_pptx, generate_presentation_slides, generate_presentation_pptx
+from backend.services.generator import generate_course_content, generate_qcm_content, generate_course_pptx, generate_presentation_slides, generate_presentation_pptx, generate_presentation_pptx_with_template
 
 router = APIRouter()
 
@@ -47,7 +47,10 @@ async def generate_course_pptx_endpoint(request: CourseRequest):
 async def generate_presentation_pptx_endpoint(request: CourseRequest):
     try:
         slides = await generate_presentation_slides(request.topic, request.level, request.model)
-        pptx_bytes = generate_presentation_pptx(slides)
+        # Get design from request, default to "Minimal"
+        design = getattr(request, 'design', 'Minimal')
+        # Use template-based generation (falls back to design-based if no template file)
+        pptx_bytes = generate_presentation_pptx_with_template(slides, design)
         pptx_io = BytesIO(pptx_bytes)
         pptx_io.seek(0)
         return StreamingResponse(
@@ -60,22 +63,20 @@ async def generate_presentation_pptx_endpoint(request: CourseRequest):
 
 @router.post("/generate-outline")
 async def generate_outline(request: CourseRequest):
-    # Prompt the LLM for a detailed outline only
+    # Prompt the LLM for a detailed outline only, with Introduction and Conclusion
     prompt = f"""
     Génère uniquement un plan détaillé de cours sur le thème suivant : '{request.topic}'.
     Niveau : {request.level}.
     Structure :
-    - 6 à 8 grandes sections numérotées
-    - Chaque section avec 2 à 4 points clés en bullet points
-    - Style markdown, pas d'introduction, pas de texte supplémentaire, pas de bloc de code.
+    - Le plan commence toujours par une section 'Introduction' et se termine par une section 'Conclusion'.
+    - Entre les deux, ajoute 4 à 6 sections principales pertinentes pour le sujet.
+    - Chaque section comporte 2 à 4 points clés en bullet points.
+    - Utilise le style markdown, sans introduction, sans texte supplémentaire, sans bloc de code.
     Réponds en français.
     """
     try:
         ai_response = await generate_course_content(request.topic, request.level, request.model)
-        # Parse the outline from the LLM response
         content = ai_response['choices'][0]['message']['content']
-        # Try to extract the outline section (if the model returns more than just the outline)
-        # If the content is only the outline, just return it
         return {"outline": content.strip()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
