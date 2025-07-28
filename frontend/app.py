@@ -106,33 +106,57 @@ if submitted_pptx:
 # Step 2: Show outline and design options, then generate PPTX
 if st.session_state['pptx_outline']:
     st.subheader("Plan de la Présentation :")
-    st.markdown(st.session_state['pptx_outline'])
+    
+    # Add editable outline
+    edited_outline = st.text_area(
+        "Modifiez le plan si nécessaire :",
+        value=st.session_state['pptx_outline'],
+        height=300,
+        key="outline_editor"
+    )
+    
+    # Update the outline in session state if edited
+    if edited_outline != st.session_state['pptx_outline']:
+        st.session_state['pptx_outline'] = edited_outline
+        st.info("Plan modifié !")
+    
     design_options = ["Minimal", "Corporate", "Colorful"]
     st.session_state['pptx_design'] = st.radio("Choisissez un design :", design_options, key="pptx_design_radio")
-    if st.button("Confirmer et Générer PPTX"):
-        with st.spinner("Génération de la présentation professionnelle en cours..."):
-            try:
-                response = requests.post(
-                    "http://127.0.0.1:8000/generate-presentation-pptx",
-                    json={
-                        "topic": topic,
-                        "level": level,
-                        "model": model_id,
-                        "outline": st.session_state['pptx_outline'],
-                        "design": st.session_state['pptx_design']
-                    },
-                    timeout=90
-                )
-                response.raise_for_status()
-                pptx_bytes = response.content
-                st.session_state['pptx_bytes'] = pptx_bytes
-                st.success("Présentation générée !")
-            except requests.Timeout:
-                st.error("La requête a expiré. Veuillez réessayer plus tard.")
-            except requests.RequestException as e:
-                st.error(f"Erreur lors de la génération de la présentation : {e}")
-            except Exception as e:
-                st.error(f"Erreur inattendue : {e}")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Confirmer et Générer PPTX"):
+            with st.spinner("Génération de la présentation professionnelle en cours..."):
+                try:
+                    response = requests.post(
+                        "http://127.0.0.1:8000/generate-presentation-pptx",
+                        json={
+                            "topic": topic,
+                            "level": level,
+                            "model": model_id,
+                            "outline": st.session_state['pptx_outline'],
+                            "design": st.session_state['pptx_design']
+                        },
+                        timeout=90
+                    )
+                    response.raise_for_status()
+                    pptx_bytes = response.content
+                    st.session_state['pptx_bytes'] = pptx_bytes
+                    st.success("Présentation générée !")
+                except requests.Timeout:
+                    st.error("La requête a expiré. Veuillez réessayer plus tard.")
+                except requests.RequestException as e:
+                    st.error(f"Erreur lors de la génération de la présentation : {e}")
+                except Exception as e:
+                    st.error(f"Erreur inattendue : {e}")
+    
+    with col2:
+        if st.button("Générer un nouveau plan", key="regenerate_outline"):
+            # Clear the current outline to trigger regeneration
+            st.session_state['pptx_outline'] = None
+            st.session_state['pptx_bytes'] = None
+            st.rerun()
+    
     if st.session_state['pptx_bytes']:
         st.download_button(
             label="Télécharger la Présentation PPTX",

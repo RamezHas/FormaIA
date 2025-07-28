@@ -158,36 +158,49 @@ def generate_presentation_pptx_with_template(slides, design: str = "Minimal") ->
     """Generate PPTX using a ready-made template file"""
     template_path = get_template_path(design)
     
-    print(f"Looking for template: {template_path}")
-    print(f"Template exists: {os.path.exists(template_path) if template_path else False}")
-    
     if template_path and os.path.exists(template_path):
-        # Use the template file
-        print(f"Using template file: {template_path}")
         prs = Presentation(template_path)
     else:
-        # Fallback to default template
-        print("Using default template (no template file found)")
         prs = Presentation()
     
-    # Add slides using the template's layout
+    num_layouts = len(prs.slide_layouts)
+    print(f"Number of layouts: {num_layouts}")
+    for i, layout in enumerate(prs.slide_layouts):
+        print(f"Layout {i}: {layout.name}")
     for idx, slide_data in enumerate(slides):
-        # Use the first layout (usually title and content)
-        slide_layout = prs.slide_layouts[1] if len(prs.slide_layouts) > 1 else prs.slide_layouts[0]
+        if idx == 0:
+            # First slide: Title slide (layout 0)
+            slide_layout_idx = 0
+        elif idx == len(slides) - 1:
+            # Last slide: Use layout 17 if available, else fallback to last available
+            slide_layout_idx = 17 if num_layouts > 17 else num_layouts - 1
+        else:
+            # Middle slides: Use layout 3 if available, else fallback to layout 1
+            slide_layout_idx = 3 if num_layouts > 3 else 1
+        slide_layout = prs.slide_layouts[slide_layout_idx]
         slide = prs.slides.add_slide(slide_layout)
-        
         # Set title
         if slide.shapes.title:
-            slide.shapes.title.text = slide_data.get('title', f"Slide {idx+1}")
-        
-        # Set content
-        if len(slide.placeholders) > 1:
-            tf = slide.placeholders[1].text_frame
+            if idx == 0:
+                slide.shapes.title.text = slide_data.get('title', "Titre de la présentation")
+            elif idx == len(slides) - 1:
+                slide.shapes.title.text = "Résumé et Conclusion"
+            else:
+                slide.shapes.title.text = slide_data.get('title', f"Slide {idx+1}")
+        # Set content (robust)
+        content_placeholder = None
+        for ph in slide.placeholders:
+            if ph.placeholder_format.type in [2, 14, 15, 16, 17, 18]:  # BODY, CONTENT, etc.
+                content_placeholder = ph
+                break
+        if content_placeholder is not None:
+            tf = content_placeholder.text_frame
             tf.clear()
             for bullet in slide_data.get('bullets', []):
                 p = tf.add_paragraph()
                 p.text = bullet
-    
+        else:
+            print(f"No content placeholder found for layout {slide_layout_idx} on slide {idx}")
     pptx_io = BytesIO()
     prs.save(pptx_io)
     return pptx_io.getvalue()

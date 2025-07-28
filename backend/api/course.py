@@ -59,6 +59,8 @@ async def generate_presentation_pptx_endpoint(request: CourseRequest):
             headers={"Content-Disposition": f"attachment; filename=presentation_{request.topic}.pptx"}
         )
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/generate-outline")
