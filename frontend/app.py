@@ -120,8 +120,63 @@ if st.session_state['pptx_outline']:
         st.session_state['pptx_outline'] = edited_outline
         st.info("Plan modifié !")
     
-    design_options = ["Minimal", "Corporate", "Colorful"]
-    st.session_state['pptx_design'] = st.radio("Choisissez un design :", design_options, key="pptx_design_radio")
+    # --- Custom card-style design selector (3 boxes) ---
+    design_options = [
+        {"name": "Minimal", "bg": "#f7f7fa", "title": "#222", "body": "#444", "link": "#0bb5fc"},
+        {"name": "Corporate", "bg": "#18183a", "title": "#fff", "body": "#ccc", "link": "#0bb5fc"},
+        {"name": "Colorful", "bg": "#fff6f6", "title": "#222", "body": "#444", "link": "#fc4b0b"},
+    ]
+    st.markdown("""
+        <style>
+        .design-card {
+            border: 2px solid #eee;
+            border-radius: 12px;
+            padding: 18px 20px 10px 20px;
+            margin: 8px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            cursor: pointer;
+            transition: border 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+        .design-card.selected {
+            border: 2px solid #0bb5fc;
+            box-shadow: 0 0 0 2px #0bb5fc33;
+            background: #eaf7fd;
+        }
+        .design-check {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #0bb5fc;
+            font-size: 1.5em;
+            display: none;
+        }
+        .design-card.selected .design-check {
+            display: block;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    cols = st.columns(3)
+    if 'pptx_design' not in st.session_state or st.session_state['pptx_design'] not in [d['name'] for d in design_options]:
+        st.session_state['pptx_design'] = design_options[0]['name']
+    for i, design in enumerate(design_options):
+        is_selected = st.session_state['pptx_design'] == design['name']
+        card_class = "design-card selected" if is_selected else "design-card"
+        with cols[i]:
+            if st.button("\u200b", key=f"design_card_{i}"):  # invisible button for click
+                st.session_state['pptx_design'] = design['name']
+            st.markdown(f'''
+            <div class="{card_class}" style="background:{design['bg']};color:{design['body']};min-width:160px;min-height:80px;">
+                <span style="color:{design['title']};font-size:1.2em;font-weight:bold;">Title</span><br>
+                <span>Body &nbsp;<a href="#" style="color:{design['link']};text-decoration:underline;">link</a></span>
+                <span class="design-check">✔</span>
+                <div style="font-size:0.9em;margin-top:8px;">{design['name']}</div>
+            </div>
+            ''', unsafe_allow_html=True)
+    # --- End custom card selector ---
     
     col1, col2 = st.columns(2)
     with col1:
@@ -277,4 +332,3 @@ if "qcm_data" in st.session_state:
         st.markdown(f"### Score final : **{score} / {len(data)}**")
 
 
-    

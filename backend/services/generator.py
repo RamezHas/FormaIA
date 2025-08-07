@@ -94,19 +94,22 @@ Format attendu :
 
 async def generate_presentation_slides(topic: str, level: str = "débutant", model: str = None):
     prompt = f"""
-Tu es un assistant qui génère des présentations professionnelles.
-Génère une présentation sur le thème : '{topic}'.
+Tu es un assistant expert en création de présentations professionnelles.
+Génère une présentation complète et détaillée sur le thème : '{topic}'.
 Niveau : {level}.
+Pour chaque slide, fournis :
+- Un titre clair et professionnel
+- Un ou plusieurs paragraphes explicatifs (pas de bullet points, mais du texte développé, structuré et informatif)
 Réponds EXCLUSIVEMENT avec une liste JSON, sans texte supplémentaire, sans introduction, sans bloc de code.
 Format attendu :
 [
   {{
-    \"title\": \"Titre du slide\",
-    \"bullets\": [\"Point 1\", \"Point 2\", ...]
+    "title": "Titre du slide",
+    "content": "Paragraphe explicatif détaillé pour ce slide."
   }},
   ...
 ]
-Chaque élément représente un slide. Utilise des titres clairs et des points synthétiques.
+Chaque élément représente un slide. Les paragraphes doivent être riches, pédagogiques et adaptés à une présentation orale professionnelle.
 """
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
