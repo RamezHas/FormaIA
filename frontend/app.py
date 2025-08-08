@@ -164,18 +164,15 @@ if st.session_state['pptx_outline']:
         st.session_state['pptx_design'] = design_options[0]['name']
     for i, design in enumerate(design_options):
         is_selected = st.session_state['pptx_design'] == design['name']
-        card_class = "design-card selected" if is_selected else "design-card"
+        button_label = f"{design['name']}"
+        button_style = (
+            f"background-color: {design['bg']}; color: {design['title']}; border-radius: 8px; border: 2px solid {'#0bb5fc' if is_selected else '#eee'}; "
+            f"padding: 18px 20px 10px 20px; min-width:160px; min-height:80px; font-weight: bold; margin-bottom: 8px;"
+        )
         with cols[i]:
-            if st.button("\u200b", key=f"design_card_{i}"):  # invisible button for click
+            if st.button(button_label, key=f"design_card_{i}"):
                 st.session_state['pptx_design'] = design['name']
-            st.markdown(f'''
-            <div class="{card_class}" style="background:{design['bg']};color:{design['body']};min-width:160px;min-height:80px;">
-                <span style="color:{design['title']};font-size:1.2em;font-weight:bold;">Title</span><br>
-                <span>Body &nbsp;<a href="#" style="color:{design['link']};text-decoration:underline;">link</a></span>
-                <span class="design-check">✔</span>
-                <div style="font-size:0.9em;margin-top:8px;">{design['name']}</div>
-            </div>
-            ''', unsafe_allow_html=True)
+            st.markdown(f'<div style="font-size:0.9em; color:{design['body']};">{design['name']}</div>', unsafe_allow_html=True)
     # --- End custom card selector ---
     
     col1, col2 = st.columns(2)
