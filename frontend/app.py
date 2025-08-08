@@ -120,60 +120,17 @@ if st.session_state['pptx_outline']:
         st.session_state['pptx_outline'] = edited_outline
         st.info("Plan modifié !")
     
-    # --- Custom card-style design selector (3 boxes) ---
-    design_options = [
-        {"name": "Minimal", "bg": "#f7f7fa", "title": "#222", "body": "#444", "link": "#0bb5fc"},
-        {"name": "Corporate", "bg": "#18183a", "title": "#fff", "body": "#ccc", "link": "#0bb5fc"},
-        {"name": "Colorful", "bg": "#fff6f6", "title": "#222", "body": "#444", "link": "#fc4b0b"},
-    ]
-    st.markdown("""
-        <style>
-        .design-card {
-            border: 2px solid #eee;
-            border-radius: 12px;
-            padding: 18px 20px 10px 20px;
-            margin: 8px 0;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            cursor: pointer;
-            transition: border 0.2s, box-shadow 0.2s;
-            position: relative;
-        }
-        .design-card.selected {
-            border: 2px solid #0bb5fc;
-            box-shadow: 0 0 0 2px #0bb5fc33;
-            background: #eaf7fd;
-        }
-        .design-check {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            color: #0bb5fc;
-            font-size: 1.5em;
-            display: none;
-        }
-        .design-card.selected .design-check {
-            display: block;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-    cols = st.columns(3)
-    if 'pptx_design' not in st.session_state or st.session_state['pptx_design'] not in [d['name'] for d in design_options]:
-        st.session_state['pptx_design'] = design_options[0]['name']
-    for i, design in enumerate(design_options):
-        is_selected = st.session_state['pptx_design'] == design['name']
-        button_label = f"{design['name']}"
-        button_style = (
-            f"background-color: {design['bg']}; color: {design['title']}; border-radius: 8px; border: 2px solid {'#0bb5fc' if is_selected else '#eee'}; "
-            f"padding: 18px 20px 10px 20px; min-width:160px; min-height:80px; font-weight: bold; margin-bottom: 8px;"
-        )
-        with cols[i]:
-            if st.button(button_label, key=f"design_card_{i}"):
-                st.session_state['pptx_design'] = design['name']
-            st.markdown(f'<div style="font-size:0.9em; color:{design['body']};">{design['name']}</div>', unsafe_allow_html=True)
-    # --- End custom card selector ---
+    # --- Simple design selector (no cards) ---
+    design_options = ["Minimal", "Corporate", "Colorful"]
+    if 'pptx_design' not in st.session_state or st.session_state['pptx_design'] not in design_options:
+        st.session_state['pptx_design'] = design_options[0]
+    st.session_state['pptx_design'] = st.radio(
+        "Choisissez un design :",
+        design_options,
+        index=design_options.index(st.session_state['pptx_design']),
+        key="pptx_design_radio"
+    )
+    # --- End simple design selector ---
     
     col1, col2 = st.columns(2)
     with col1:
@@ -202,12 +159,6 @@ if st.session_state['pptx_outline']:
                 except Exception as e:
                     st.error(f"Erreur inattendue : {e}")
     
-    with col2:
-        if st.button("Générer un nouveau plan", key="regenerate_outline"):
-            # Clear the current outline to trigger regeneration
-            st.session_state['pptx_outline'] = None
-            st.session_state['pptx_bytes'] = None
-            st.rerun()
     
     if st.session_state['pptx_bytes']:
         st.download_button(
