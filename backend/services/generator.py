@@ -13,15 +13,23 @@ MODEL = "openai/gpt-4o-mini"
 
 async def generate_course_content(topic: str, level: str = "débutant", model: str = None) -> dict:
     prompt = f"""
-    Génère un cours structuré sur le thème suivant : '{topic}'.
-    Niveau : {level}.
-    Structure :
-    - Titre du cours
-    - Plan détaillé
-    - Résumé
-    - Contenu principal
-    Réponds en français.
-    """
+Tu es un assistant expert en création de présentations professionnelles.
+Génère une présentation complète et détaillée sur le thème : '{topic}'.
+Niveau : {level}.
+Pour chaque slide, fournis :
+- Un titre clair et professionnel
+- Un ou plusieurs paragraphes explicatifs (pas de bullet points, mais du texte développé, structuré et informatif)
+Réponds EXCLUSIVEMENT avec une liste JSON, sans texte supplémentaire, sans introduction, sans bloc de code.
+Format attendu :
+[
+  {{
+    "title": "Titre du slide",
+    "content": "Paragraphe explicatif détaillé pour ce slide."
+  }},
+  ...
+]
+Chaque élément représente un slide. Les paragraphes doivent être riches, pédagogiques et adaptés à une présentation orale professionnelle.
+"""
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json"
@@ -93,24 +101,32 @@ Format attendu :
         return {"qcm": parsed_qcm}
 
 async def generate_presentation_slides(topic: str, level: str = "débutant", model: str = None):
-    prompt = f"""
-Tu es un assistant expert en création de présentations professionnelles.
-Génère une présentation complète et détaillée sur le thème : '{topic}'.
-Niveau : {level}.
-Pour chaque slide, fournis :
-- Un titre clair et professionnel
-- Un ou plusieurs paragraphes explicatifs (pas de bullet points, mais du texte développé, structuré et informatif)
-Réponds EXCLUSIVEMENT avec une liste JSON, sans texte supplémentaire, sans introduction, sans bloc de code.
-Format attendu :
-[
-  {{
-    "title": "Titre du slide",
-    "content": "Paragraphe explicatif détaillé pour ce slide."
-  }},
-  ...
-]
-Chaque élément représente un slide. Les paragraphes doivent être riches, pédagogiques et adaptés à une présentation orale professionnelle.
-"""
+            prompt = f"""
+    Tu es un assistant expert en création de présentations professionnelles.
+    Génère une présentation complète et détaillée sur le thème : '{topic}'.
+    Niveau : {level}.
+
+    La première diapositive (index 0) doit être une diapositive de titre :
+    - "title" = le titre complet de la présentation (reprenant fidèlement le thème)
+    - "content" = un court paragraphe d'introduction présentant l'objectif général de la présentation.
+
+    Pour chaque autre diapositive :
+    - Fournis un titre clair et professionnel
+    - Fournis un ou plusieurs paragraphes explicatifs (pas de bullet points, mais du texte développé, structuré et informatif)
+
+    Réponds EXCLUSIVEMENT avec une liste JSON, sans texte supplémentaire, sans introduction, sans bloc de code.
+
+    Format attendu :
+    [
+        {{
+            "title": "Titre du slide",
+            "content": "Paragraphe explicatif détaillé pour ce slide."
+        }},
+        ...
+    ]
+
+    Chaque élément représente un slide. Les paragraphes doivent être riches, pédagogiques et adaptés à une présentation orale professionnelle.
+    """
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json"
@@ -172,13 +188,10 @@ def generate_presentation_pptx_with_template(slides, design: str = "Minimal") ->
         print(f"Layout {i}: {layout.name}")
     for idx, slide_data in enumerate(slides):
         if idx == 0:
-            # First slide: Title slide (layout 0)
             slide_layout_idx = 0
         elif idx == len(slides) - 1:
-            # Last slide: Use layout 17 if available, else fallback to last available
             slide_layout_idx = 17 if num_layouts > 17 else num_layouts - 1
         else:
-            # Middle slides: Use layout 3 if available, else fallback to layout 1
             slide_layout_idx = 3 if num_layouts > 3 else 1
         slide_layout = prs.slide_layouts[slide_layout_idx]
         slide = prs.slides.add_slide(slide_layout)
@@ -190,18 +203,20 @@ def generate_presentation_pptx_with_template(slides, design: str = "Minimal") ->
                 slide.shapes.title.text = "Résumé et Conclusion"
             else:
                 slide.shapes.title.text = slide_data.get('title', f"Slide {idx+1}")
-        # Set content (robust)
+        # Set content using 'content' field
         content_placeholder = None
         for ph in slide.placeholders:
-            if ph.placeholder_format.type in [2, 14, 15, 16, 17, 18]:  # BODY, CONTENT, etc.
+            if ph.placeholder_format.type in [2, 14, 15, 16, 17, 18]:
                 content_placeholder = ph
                 break
         if content_placeholder is not None:
             tf = content_placeholder.text_frame
             tf.clear()
-            for bullet in slide_data.get('bullets', []):
-                p = tf.add_paragraph()
-                p.text = bullet
+            content = slide_data.get('content', '')
+            if content:
+                for paragraph in content.split('\n'):
+                    p = tf.add_paragraph()
+                    p.text = paragraph.strip()
         else:
             print(f"No content placeholder found for layout {slide_layout_idx} on slide {idx}")
     pptx_io = BytesIO()
@@ -222,14 +237,16 @@ def generate_presentation_pptx(slides) -> bytes:
         slide.shapes.title.text_frame.paragraphs[0].font.size = Pt(36 if idx else 44)
         slide.shapes.title.text_frame.paragraphs[0].font.bold = True
         slide.shapes.title.text_frame.paragraphs[0].font.color.rgb = RGBColor(34, 49, 63) if idx else RGBColor(255, 255, 255)
-        # Bullets
+        # Content (use 'content' field)
         tf = slide.placeholders[1].text_frame
         tf.clear()
-        for bullet in slide_data.get('bullets', []):
-            p = tf.add_paragraph()
-            p.text = bullet
-            p.font.size = Pt(22)
-            p.font.color.rgb = RGBColor(44, 62, 80) if idx else RGBColor(255, 255, 255)
+        content = slide_data.get('content', '')
+        if content:
+            for paragraph in content.split('\n'):
+                p = tf.add_paragraph()
+                p.text = paragraph.strip()
+                p.font.size = Pt(22)
+                p.font.color.rgb = RGBColor(44, 62, 80) if idx else RGBColor(255, 255, 255)
         # Remove the first empty paragraph
         if tf.paragraphs and not tf.paragraphs[0].text:
             tf._element.remove(tf.paragraphs[0]._p)
