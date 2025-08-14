@@ -101,7 +101,7 @@ Format attendu :
         return {"qcm": parsed_qcm}
 
 async def generate_presentation_slides(topic: str, level: str = "débutant", model: str = None):
-            prompt = f"""
+    prompt = f"""
     Tu es un assistant expert en création de présentations professionnelles.
     Génère une présentation complète et détaillée sur le thème : '{topic}'.
     Niveau : {level}.
@@ -192,7 +192,7 @@ def generate_presentation_pptx_with_template(slides, design: str = "Minimal") ->
         elif idx == len(slides) - 1:
             slide_layout_idx = 17 if num_layouts > 17 else num_layouts - 1
         else:
-            slide_layout_idx = 3 if num_layouts > 3 else 1
+            slide_layout_idx = 1 if num_layouts > 1 else 1
         slide_layout = prs.slide_layouts[slide_layout_idx]
         slide = prs.slides.add_slide(slide_layout)
         # Set title
