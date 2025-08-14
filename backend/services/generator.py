@@ -191,7 +191,7 @@ def generate_presentation_pptx_with_template(slides, design: str = "Minimal") ->
         elif idx == len(slides) - 1:
             slide_layout_idx = min(17, num_layouts - 1)
         else:
-            slide_layout_idx = 1
+            slide_layout_idx = 4
 
         slide = prs.slides.add_slide(prs.slide_layouts[slide_layout_idx])
 
@@ -218,6 +218,7 @@ def generate_presentation_pptx_with_template(slides, design: str = "Minimal") ->
                 tf.clear()
                 for paragraph in content.split("\n"):
                     p = tf.add_paragraph()
+                    p.font.size = Pt(24)  # Set font size for better readability
                     p.text = paragraph.strip()
                 content_applied = True
                 break
@@ -230,6 +231,7 @@ def generate_presentation_pptx_with_template(slides, design: str = "Minimal") ->
                     tf.clear()
                     for paragraph in content.split("\n"):
                         p = tf.add_paragraph()
+                        p.font.size = Pt(24)  # Set font size for better readability
                         p.text = paragraph.strip()
                     content_applied = True
                     break
