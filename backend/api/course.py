@@ -39,7 +39,17 @@ async def generate_course_pptx_endpoint(request: CourseRequest):
         pptx_bytes = generate_course_pptx(title, outline, summary, raw_content)
         pptx_io = BytesIO(pptx_bytes)
         pptx_io.seek(0)
-        return StreamingResponse(pptx_io, media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation", headers={"Content-Disposition": f"attachment; filename=course_{request.topic}.pptx"})
+        import urllib.parse
+        def ascii_filename(s):
+            return ''.join(c if ord(c) < 128 else '_' for c in s)
+        safe_topic = ascii_filename(request.topic)
+        quoted_topic = urllib.parse.quote(request.topic)
+        content_disp = f"attachment; filename=course_{safe_topic}.pptx; filename*=UTF-8''course_{quoted_topic}.pptx"
+        return StreamingResponse(
+            pptx_io,
+            media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            headers={"Content-Disposition": content_disp}
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -53,10 +63,16 @@ async def generate_presentation_pptx_endpoint(request: CourseRequest):
         pptx_bytes = generate_presentation_pptx_with_template(slides, design)
         pptx_io = BytesIO(pptx_bytes)
         pptx_io.seek(0)
+        import urllib.parse
+        def ascii_filename(s):
+            return ''.join(c if ord(c) < 128 else '_' for c in s)
+        safe_topic = ascii_filename(request.topic)
+        quoted_topic = urllib.parse.quote(request.topic)
+        content_disp = f"attachment; filename=presentation_{safe_topic}.pptx; filename*=UTF-8''presentation_{quoted_topic}.pptx"
         return StreamingResponse(
             pptx_io,
             media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-            headers={"Content-Disposition": f"attachment; filename=presentation_{request.topic}.pptx"}
+            headers={"Content-Disposition": content_disp}
         )
     except Exception as e:
         import traceback
