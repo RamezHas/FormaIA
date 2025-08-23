@@ -52,6 +52,11 @@ if submitted:
             data = response.json()
             st.session_state["course_data"] = data
             st.success("Cours généré !")
+            # Display the model's return immediately
+            st.subheader(data["title"])
+            st.markdown(f"**Plan :**\n{data['outline']}")
+            st.markdown(f"**Résumé :**\n{data['summary']}")
+            st.markdown(f"**Contenu brut :**\n{data['raw_content']}")
         except requests.Timeout:
             st.error("La requête a expiré. Veuillez réessayer plus tard.")
         except requests.RequestException as e:
@@ -161,6 +166,7 @@ if st.session_state['pptx_outline']:
 
 if "course_data" in st.session_state:
     data = st.session_state["course_data"]
+    # Display the model's return always after generation
     st.subheader(data["title"])
     st.markdown(f"**Plan :**\n{data['outline']}")
     st.markdown(f"**Résumé :**\n{data['summary']}")

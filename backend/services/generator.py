@@ -16,7 +16,14 @@ OPENROUTER_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 async def generate_course_content(topic: str, level: str = "débutant", model: str = None) -> dict:
     prompt = f"""
-    
+    Génère un cours structuré sur le thème suivant : '{topic}'.
+    Niveau : {level}.
+    Structure :
+    - Titre du cours
+    - Plan détaillé
+    - Résumé
+    - Contenu principal
+    Réponds en français.
 """
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
