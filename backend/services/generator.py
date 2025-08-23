@@ -16,25 +16,7 @@ OPENROUTER_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 async def generate_course_content(topic: str, level: str = "débutant", model: str = None) -> dict:
     prompt = f"""
-    Tu es un assistant expert en création de présentations professionnelles.  
-Génère une présentation complète sur le thème : '{topic}'.  
-Niveau : {level}.  
- 
-La première diapositive (index 0) doit être un slide de titre :  
-- "title" = le titre complet de la présentation (reprenant fidèlement le thème)  
-- pas de "content" dans ce slide  
-
-Ensuite :  
-- Crée plusieurs diapositives explicatives ("Présentation PPT") avec un titre clair et un ou plusieurs paragraphes développés (pas de puces).  
-- Ajoute ensuite des diapositives d’"Exercices pratiques" avec un titre et une consigne détaillée, adaptées au niveau {level}.  
-
-Réponds EXCLUSIVEMENT avec une liste JSON valide, sans texte supplémentaire ni bloc de code.  
-
-Format attendu :  
-[  
-  {{ "title": "Titre du slide", "content": "Texte explicatif ou consigne" }},  
-  ...  
-]  
+    
 """
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -101,11 +83,12 @@ Format attendu :
         return {"qcm": parsed_qcm}
 
 
-async def generate_presentation_slides(topic: str, level: str = "débutant", model: str = None):
+async def generate_presentation_slides(topic: str,level: str = "débutant",theorique_hours: int = 0,pratique_hours: int = 0,model: str = None):
     prompt = f"""
     Tu es un assistant expert en création de présentations professionnelles.  
 Génère une présentation complète sur le thème : '{topic}'.  
 Niveau : {level}.  
+Durée indicative : {theorique_hours}h théorique et {pratique_hours}h pratique. 
  
 La première diapositive (index 0) doit être un slide de titre :  
 - "title" = le titre complet de la présentation (reprenant fidèlement le thème)  

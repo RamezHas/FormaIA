@@ -21,6 +21,8 @@ st.title("Générateur de Contenu de Formation IA")
 with st.form("course_form"):
     topic = st.text_input("Sujet du cours", "")
     level = st.selectbox("Niveau", ["débutant", "intermédiaire", "avancé"])
+    theorique_hours = st.number_input("Durée théorique (heures)", min_value=0, max_value=100, value=0, step=1)
+    pratique_hours = st.number_input("Durée pratique (heures)", min_value=0, max_value=100, value=0, step=1)
     model_options = [
         ("openai/gpt-oss-120b", "openai/gpt-oss-120b"),
         ("llama-3.1-8b-instant", "llama-3.1-8b-instant"),
@@ -88,7 +90,13 @@ if submitted_pptx:
         try:
             response = requests.post(
                 "http://127.0.0.1:8000/generate-outline",
-                json={"topic": topic, "level": level, "model": model_id},
+                json={
+                    "topic": topic,
+                    "level": level,
+                    "theorique_hours": theorique_hours,
+                    "pratique_hours": pratique_hours,
+                    "model": model_id
+                },
                 timeout=30
             )
             response.raise_for_status()
@@ -124,6 +132,8 @@ if st.session_state['pptx_outline']:
                         json={
                             "topic": topic,
                             "level": level,
+                            "theorique_hours": theorique_hours,
+                            "pratique_hours": pratique_hours,
                             "model": model_id,
                             "outline": st.session_state['pptx_outline'],
                             "design": st.session_state['pptx_design']
