@@ -22,11 +22,9 @@ with st.form("course_form"):
     topic = st.text_input("Sujet du cours", "")
     level = st.selectbox("Niveau", ["débutant", "intermédiaire", "avancé"])
     model_options = [
-        ("Llama 4 Maverick", "meta-llama/llama-4-maverick"),
-        ("GPT-4o-mini", "openai/gpt-4o-mini"),
-        ("Gemini 2.0 Flash", "google/gemini-2.0-flash-001"),
-        ("QwQ 32B", "qwen/qwq-32b:free"),
-        ("Deepseek R1 0528 Qwen3 8B", "deepseek/deepseek-r1-0528-qwen3-8b:free")
+        ("openai/gpt-oss-120b", "openai/gpt-oss-120b"),
+        ("llama-3.1-8b-instant", "llama-3.1-8b-instant"),
+        ("deepseek-r1-distill-llama-70b", "deepseek-r1-distill-llama-70b"),
     ]
     model_display_names = [name for name, _ in model_options]
     model_selected = st.selectbox("Modèle IA", model_display_names)
@@ -68,7 +66,7 @@ if submitted_qcm:
             )
             response.raise_for_status()
             qcm_data = response.json()["qcm"]
-            st.session_state["qcm_data"] = qcm_data  # Already a Python list/dict
+            st.session_state["qcm_data"] = qcm_data
             st.success("QCM généré !")
         except requests.Timeout:
             st.error("La requête a expiré. Veuillez réessayer plus tard.")
@@ -76,7 +74,8 @@ if submitted_qcm:
             st.error(f"Erreur lors de la génération du QCM : {e}")
         except Exception as e:
             st.error(f"Erreur inattendue : {e}")
-# New AI Presentation PPTX button (Step 1: Get outline and show design options)
+
+# Session state for PPTX
 if 'pptx_outline' not in st.session_state:
     st.session_state['pptx_outline'] = None
 if 'pptx_design' not in st.session_state:
@@ -103,24 +102,8 @@ if submitted_pptx:
         except Exception as e:
             st.error(f"Erreur inattendue : {e}")
 
-# Step 2: Show outline and design options, then generate PPTX
+# Step 2: Outline + Design + PPTX generation
 if st.session_state['pptx_outline']:
-    st.subheader("Plan de la Présentation :")
-    
-    # Add editable outline
-    edited_outline = st.text_area(
-        "Modifiez le plan si nécessaire :",
-        value=st.session_state['pptx_outline'],
-        height=300,
-        key="outline_editor"
-    )
-    
-    # Update the outline in session state if edited
-    if edited_outline != st.session_state['pptx_outline']:
-        st.session_state['pptx_outline'] = edited_outline
-        st.info("Plan modifié !")
-    
-    # --- Simple design selector (no cards) ---
     design_options = ["Minimal", "Corporate", "Colorful"]
     if 'pptx_design' not in st.session_state or st.session_state['pptx_design'] not in design_options:
         st.session_state['pptx_design'] = design_options[0]
@@ -130,8 +113,7 @@ if st.session_state['pptx_outline']:
         index=design_options.index(st.session_state['pptx_design']),
         key="pptx_design_radio"
     )
-    # --- End simple design selector ---
-    
+
     col1, col2 = st.columns(2)
     with col1:
         if st.button("Confirmer et Générer PPTX"):
@@ -158,8 +140,7 @@ if st.session_state['pptx_outline']:
                     st.error(f"Erreur lors de la génération de la présentation : {e}")
                 except Exception as e:
                     st.error(f"Erreur inattendue : {e}")
-    
-    
+
     if st.session_state['pptx_bytes']:
         st.download_button(
             label="Télécharger la Présentation PPTX",
@@ -167,7 +148,6 @@ if st.session_state['pptx_outline']:
             file_name="presentation_formaia.pptx",
             mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
         )
-
 
 if "course_data" in st.session_state:
     data = st.session_state["course_data"]
@@ -235,48 +215,10 @@ if "course_data" in st.session_state:
             pdf.multi_cell(0, 10, remove_accents(data["summary"]))
             pdf.cell(0, 10, "Contenu brut:", ln=True)
             pdf.multi_cell(0, 10, remove_accents(data["raw_content"]))
-            pdf_output = pdf.output(dest='S').encode('latin1')
+            pdf_output = pdf.output(dest='S').encode('utf-8', errors='replace')
             st.download_button(
                 label="Télécharger le PDF",
                 data=pdf_output,
                 file_name="cours_formaia.pdf",
                 mime="application/pdf"
             )
-if "qcm_data" in st.session_state:
-    data = st.session_state["qcm_data"]
-    st.subheader("QCM")
-    st.markdown("### Questions :")
-
-    for i, question in enumerate(data):
-        st.write(f"**Question {i + 1}:** {question['question']}")
-        st.radio(
-            "Choix :",
-            options=question['choices'],
-            key=f"qcm_{i}",
-            index=None
-        )
-
-    qcm_button = st.button("Soumettre le QCM")
-
-    if qcm_button:
-        score = 0
-        st.markdown("---")
-        st.markdown("### Résultats :")
-
-        for i, question in enumerate(data):
-            user_answer = st.session_state.get(f"qcm_{i}", None)
-            correct_letter = question["answer"]
-            correct_text = next(
-                (choice for choice in question["choices"] if choice.startswith(correct_letter)), None
-            )
-
-            if user_answer == correct_text:
-                st.success(f"✅ Question {i + 1}: Correct")
-                score += 1
-            else:
-                st.error(f"❌ Question {i + 1}: Incorrect (Bonne réponse : {correct_text})")
-
-        st.markdown("---")
-        st.markdown(f"### Score final : **{score} / {len(data)}**")
-
-
