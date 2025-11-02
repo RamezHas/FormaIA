@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 import unicodedata
 
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = ""
 OPENROUTER_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
